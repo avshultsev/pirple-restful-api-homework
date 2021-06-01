@@ -4,7 +4,7 @@ const { TOKEN_LENGTH, TOKEN_VALIDITY_TIME } = require('../constants.js');
 
 const verifyToken = async (token, phone) => {
   try {
-    const tokenData = await readFile('tokens', token);
+    const tokenData = await readFile('tokens', `${token}.json`);
     const { phone: userPhone, expires } = tokenData;
     return (userPhone === phone) && (expires > Date.now());
   } catch (err) {
@@ -15,7 +15,7 @@ const verifyToken = async (token, phone) => {
 const _get = async ({ queryParams }) => {
   const { token } = queryParams;
   try {
-    const tokenData = await readFile('tokens', token);
+    const tokenData = await readFile('tokens', `${token}.json`);
     return {result: tokenData, statusCode: 200};
   } catch (err) {
     return {result: 'Token not found!', statusCode: 404};
@@ -27,12 +27,12 @@ const _post = async ({ body }) => {
   const hashedPassword = toHash(password);
   const token = createRandomString(TOKEN_LENGTH);
   try {
-    const user = await readFile('users', phone);
+    const user = await readFile('users', `${phone}.json`);
     if (user.password === hashedPassword) {
       const expires = Date.now() + TOKEN_VALIDITY_TIME;
       const tokenData = { phone, token, expires };
       try {
-        await createFile('tokens', token, tokenData);
+        await createFile('tokens', `${token}.json`, tokenData);
         return {result: tokenData, statusCode: 200};
       } catch (err) {
         return {result: 'File already exists!', statusCode: 500};
@@ -50,11 +50,11 @@ const _put = async ({ body, queryParams }) => {
   const { shouldExtend } = body;
   if (!shouldExtend) return {result: 'Missing the required fields', statusCode: 400};
   try {
-    const tokenData = await readFile('tokens', token);
+    const tokenData = await readFile('tokens', `${token}.json`);
     if (tokenData.expires > Date.now()) {
       tokenData.expires = Date.now() + TOKEN_VALIDITY_TIME;
       try {
-        await updateFile('tokens', token, tokenData);
+        await updateFile('tokens', `${token}.json`, tokenData);
         return {result: 'Token updated successfully!', statusCode: 200};
       } catch (err) {
         return {result: 'Unable to update token!', statusCode: 500};
@@ -69,7 +69,7 @@ const _put = async ({ body, queryParams }) => {
 const _delete = async ({ queryParams }) => {
   const { token } = queryParams;
   try {
-    await deleteFile('tokens', token);
+    await deleteFile('tokens', `${token}.json`);
     return {result: 'Token deleted successfully!', statusCode: 200};
   } catch (err) {
     console.log(err);
