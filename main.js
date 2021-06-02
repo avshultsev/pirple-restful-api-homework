@@ -1,6 +1,7 @@
 const http = require('http');
 const PORT = process.env.PORT || 3000;
 const userHandlers  = require('./handlers/userHandlers.js');
+const itemHandlers  = require('./handlers/itemHandlers.js');
 const tokenHandlers = require('./handlers/tokenHandlers.js');
 
 const receiveArgs = async (req) => {
@@ -39,6 +40,13 @@ const routing = {
     put:    tokenHandlers._put,
     delete: tokenHandlers._delete,
   },
+  '/items': {
+    get:    itemHandlers._get,
+    post:   itemHandlers._post,
+    put:    itemHandlers._put,
+    delete: itemHandlers._delete,
+  },
+  
 };
 
 const notFound = (res) => {

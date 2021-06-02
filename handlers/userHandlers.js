@@ -23,16 +23,18 @@ const _post = async ({ body }) => {
   const required = ['firstName', 'lastName', 'phone', 'password'];
   const validPayload = validatePayload(required, body);
   if (!validPayload) return {result: 'Missing required fields!', statusCode: 400};
-  const phoneDigits = validPayload.phone.match(/\d+/)[0];
-  validPayload.phone = phoneDigits;
   const { phone, password } = validPayload;
-  if (phone.length < MIN_PHONE_NUMBER_LENGTH) {
-    return {result: 'Phone number too short!', statusCode: 400};
+  if (phone.length < MIN_PHONE_NUMBER_LENGTH || /\D/.test(phone)) {
+    return {result: 'Phone number too short or contains non numerical chars!', statusCode: 400};
   };
   validPayload.password = toHash(password);
+  validPayload.orders = [];
   try {
-    await createFile('users', `${phone}.json`, validPayload);
-    await createFolder('orders', phone);
+    await Promise.all([
+      createFile('users', `${phone}.json`, validPayload),
+      createFile('carts', `${phone}.json`, JSON.stringify([])),
+      createFolder('orders', phone)
+    ]);
     return {result: 'File created successfully!', statusCode: 200};
   } catch (err) {
     console.log(err);
@@ -54,6 +56,7 @@ const _put = async ({ body, queryParams, token }) => {
       try {
         await Promise.all([
           rename('users', `${phone}.json`, `${validPayload.phone}.json`),
+          rename('carts', `${phone}.json`, `${validPayload.phone}.json`),
           rename('orders', phone, body.phone)
         ]);
       } catch (err) { // if rename fails - set the phone to one from queryParams
