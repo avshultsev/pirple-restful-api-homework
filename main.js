@@ -3,6 +3,7 @@ const PORT = process.env.PORT || 3000;
 const userHandlers  = require('./handlers/userHandlers.js');
 const itemHandlers  = require('./handlers/itemHandlers.js');
 const tokenHandlers = require('./handlers/tokenHandlers.js');
+const cartHandlers  = require('./handlers/cartHandlers.js');
 
 const receiveArgs = async (req) => {
   const chunks = [];
@@ -46,7 +47,11 @@ const routing = {
     put:    itemHandlers._put,
     delete: itemHandlers._delete,
   },
-  
+  '/cart': {
+    get:    cartHandlers._get,
+    put:    cartHandlers._put,
+    delete: cartHandlers._delete,
+  },
 };
 
 const notFound = (res) => {

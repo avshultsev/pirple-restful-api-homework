@@ -29,10 +29,11 @@ const _post = async ({ body }) => {
   };
   validPayload.password = toHash(password);
   validPayload.orders = [];
+  const initialCart = { items: [], total: 0 };
   try {
     await Promise.all([
       createFile('users', `${phone}.json`, validPayload),
-      createFile('carts', `${phone}.json`, JSON.stringify([])),
+      createFile('carts', `${phone}.json`, initialCart),
       createFolder('orders', phone)
     ]);
     return {result: 'File created successfully!', statusCode: 200};
