@@ -34,7 +34,7 @@ const _put = async ({ body, queryParams, token }) => {
       cart.items.push(validPayload);
       cart.total += price;
       try {
-        await updateFile('cart', `${phone}.json`, cart);
+        await updateFile('carts', `${phone}.json`, cart);
         return {result: cart, statusCode: 200};
       } catch (err) {
         return {result: 'Error updating file!', statusCode: 500};

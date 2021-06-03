@@ -4,6 +4,7 @@ const userHandlers  = require('./handlers/userHandlers.js');
 const itemHandlers  = require('./handlers/itemHandlers.js');
 const tokenHandlers = require('./handlers/tokenHandlers.js');
 const cartHandlers  = require('./handlers/cartHandlers.js');
+const orderHandlers = require('./handlers/orderHandlers.js');
 
 const receiveArgs = async (req) => {
   const chunks = [];
@@ -52,6 +53,12 @@ const routing = {
     put:    cartHandlers._put,
     delete: cartHandlers._delete,
   },
+  '/orders': {
+    get:    orderHandlers._get,
+    post:   orderHandlers._post,
+    put:    orderHandlers._put,
+    delete: orderHandlers._delete,
+  },  
 };
 
 const notFound = (res) => {
