@@ -5,13 +5,7 @@ const itemHandlers  = require('./handlers/itemHandlers.js');
 const tokenHandlers = require('./handlers/tokenHandlers.js');
 const cartHandlers  = require('./handlers/cartHandlers.js');
 const orderHandlers = require('./handlers/orderHandlers.js');
-
-const receiveArgs = async (req) => {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const data = Buffer.concat(chunks).toString();
-  return JSON.parse(data);
-};
+const { receiveArgs } = require('./lib/utils.js');
 
 const parseQueryParams = ({ url, headers }) => {
   const { host } = headers;

@@ -1,13 +1,16 @@
 const MIN_PHONE_NUMBER_LENGTH = 7;
 const TOKEN_LENGTH = 20;
 const TOKEN_VALIDITY_TIME = 60 * 60 * 1000; // 1 hour in ms
-const SECRET = 'MyVerySecretValue';
 const ORDER_ID_LENGTH = 10;
+const PUBLIC_KEY = 'pk_test_51IxSw4GuweXeVPHVWhX2nZTU6fHvGme8nEy9xyqzeYvUZJhaE6ulllbaexqbYl7DOubRX84iux18uOT5FekTQQVb00S1e6Zpjl';
+const ACCOUNT_ID = 'acct_1IxSw4GuweXeVPHV';
+const CHARGE_ID = 'ch_1IyrejGuweXeVPHVnbaUt5p5';
 
 module.exports = {
   MIN_PHONE_NUMBER_LENGTH,
   TOKEN_LENGTH,
   TOKEN_VALIDITY_TIME,
-  SECRET,
   ORDER_ID_LENGTH,
+  PUBLIC_KEY,
+  ACCOUNT_ID,
 };
