@@ -4,7 +4,12 @@
 {
   method: `POST`;
   endpoint: `/users`;
-  payload: { 'firstName', 'lastName', 'password', 'phone', cardInfo: { 'number', 'exp_month', 'exp_year', 'cvc' } };
+  payload: { 
+    'firstName', 
+    'lastName', 
+    'password', 
+    'phone', 
+    'cardInfo': { 'number', 'exp_month', 'exp_year', 'cvc' } };
 }
 ```
 ### Create user cart
