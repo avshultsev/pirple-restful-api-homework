@@ -44,13 +44,13 @@ const routing = {
   },
   '/cart': {
     get:    cartHandlers._get,
+    post:   cartHandlers._post,
     put:    cartHandlers._put,
     delete: cartHandlers._delete,
   },
   '/orders': {
     get:    orderHandlers._get,
     post:   orderHandlers._post,
-    put:    orderHandlers._put,
     delete: orderHandlers._delete,
   },  
 };

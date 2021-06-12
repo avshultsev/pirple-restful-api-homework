@@ -10,11 +10,23 @@ const _get = async ({ queryParams, token }) => {
     const cart = await readFile('carts', `${phone}.json`);
     return {result: cart, statusCode: 200};
   } catch (err) {
+    console.log(err);
     return {result: 'File not found!', statusCode: 404};
   }
 };
 
-// const _post = async ({ body }) => {};
+const _post = async ({ queryParams, token }) => {
+  const { phone } = queryParams;
+  const tokenVerified = await verifyToken(token, phone);
+  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  try {
+    await createFile('carts', `${phone}.json`, { items: [], total: 0 });
+    return {result: `Cart created for user ${phone}!`, statusCode: 200};
+  } catch (err) {
+    console.log(err);
+    return {result: `Cart for user ${phone} already exists!`, statusCode: 400};
+  }
+};
 
 const _put = async ({ body, queryParams, token }) => {
   const { phone } = queryParams;
@@ -72,4 +84,4 @@ const _delete = async ({ queryParams, token }) => {
   }
 };
 
-module.exports = { _get, _put, _delete };
+module.exports = { _get, _post, _put, _delete };

@@ -20,14 +20,6 @@
   payload: `null`;
 }
 ```
-### Create user orders collection (mkdir)
-```
-{
-  method: `POST`;
-  endpoint: `/orders/{userPhone}`;
-  payload: `null`;
-}
-```
 ### Updating user cart
 ```
 {
@@ -36,11 +28,12 @@
   payload: { 'itemName', 'itemPrice', 'itemSize' };
 }
 ```
-### Create order (touch)
+### Create order
+if (!userPhoneDir) mkdir('orders', '{userPhone}');
 ```
 {
   method: `POST`;
-  endpoint: `/orders/{userPhone}/{orderID}`;
+  endpoint: `/orders/{userPhone}`;
   payload: `GET` to `/cart/{userPhone}` + check for available cards;
 }
 ```

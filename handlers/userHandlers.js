@@ -2,6 +2,7 @@ const { createFile, readFile, updateFile, deleteFile, rename, createFolder } = r
 const { toHash, validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 const { MIN_PHONE_NUMBER_LENGTH } = require('../constants.js');
+const orderHandlers = require('./orderHandlers.js');
 
 const _get = async ({ queryParams, token }) => {
   const { phone } = queryParams;
@@ -29,12 +30,10 @@ const _post = async ({ body }) => {
   };
   validPayload.password = toHash(password);
   validPayload.orders = [];
-  const initialCart = { items: [], total: 0 };
   try {
     await Promise.all([
       createFile('users', `${phone}.json`, validPayload),
-      createFile('carts', `${phone}.json`, initialCart),
-      createFolder('orders', phone)
+      orderHandlers.__createOrdersCollection(phone),
     ]);
     return {result: 'File created successfully!', statusCode: 200};
   } catch (err) {
@@ -57,8 +56,8 @@ const _put = async ({ body, queryParams, token }) => {
       try {
         await Promise.all([
           rename('users', `${phone}.json`, `${validPayload.phone}.json`),
-          rename('carts', `${phone}.json`, `${validPayload.phone}.json`),
-          rename('orders', phone, body.phone)
+          rename('carts', `${phone}.json`, `${validPayload.phone}.json`), // change to '_put' method
+          rename('orders', phone, body.phone) // change to '_put' method
         ]);
       } catch (err) { // if rename fails - set the phone to one from queryParams
         console.log('Error renaming file!', err);
@@ -83,7 +82,7 @@ const _delete = async ({ queryParams, token }) => {
     try {
       await Promise.all([
         deleteFile('users', `${phone}.json`),
-        deleteFile('orders', phone)
+        deleteFile('orders', phone) // change to '_delete' method
       ]);
       return {result: 'File deleted successfully!', statusCode: 200};
     } catch (err) {

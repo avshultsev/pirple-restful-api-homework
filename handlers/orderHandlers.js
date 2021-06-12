@@ -1,7 +1,9 @@
 const { ORDER_ID_LENGTH } = require('../constants.js');
-const { createFile, readFile, updateFile, deleteFile, listItems } = require('../lib/crud.js');
+const { createFile, readFile, updateFile, deleteFile, listItems, createFolder } = require('../lib/crud.js');
 const { createRandomString } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
+const cartHandlers = require('./cartHandlers.js');
+const userHandlers = require('./userHandlers.js');
 
 const isValid = (item, menuItem) => {
   const { price, size } = item;
@@ -27,17 +29,11 @@ const validateBody = async ({ items, total }) => {
   }
 };
 
-const prepareOrder = async (phone, orderID) => {
+const __createOrdersCollection = async (phone) => {
   try {
-    const order = await readFile('orders', phone, `${orderID}.json`);
-    order.isFinished = true;
-    try {
-      await updateFile('orders', phone, `${orderID}.json`, order);
-    } catch (err) {
-      console.log(err);
-    }
+    await createFolder('orders', phone);
   } catch (err) {
-    console.log(err);
+    console.log('Folder already exists!');
   }
 };
 
@@ -71,49 +67,16 @@ const _post = async ({ queryParams, token }) => {
     ]);
     const orderID = createRandomString(ORDER_ID_LENGTH);
     user.orders.push(orderID);
-    cartInfo.isFinished = false;
-
-    setTimeout(() => prepareOrder(phone, orderID), cartInfo.items.length * 1000 * 60); // imitation of the order to be prepared
-    
     const initialCart = { items: [], total: 0 };
     await Promise.all([
       createFile('orders', phone, `${orderID}.json`, cartInfo),
-      updateFile('carts', `${phone}.json`, initialCart),
-      updateFile('users', `${phone}.json`, user)
+      cartHandlers._put({ initialCart, queryParams, token }),
+      userHandlers._put({ user, queryParams, token }),
     ]);
     return {result: 'Order accepted!', statusCode: 200};
   } catch (err) {
     console.log(err);
     return {result: 'User cart not found!', statusCode: 404};
-  }
-};
-
-const _put = async ({ body, queryParams, token }) => {
-  const { phone, orderID } = queryParams;
-  const tokenVerified = await verifyToken(token, phone);
-  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
-  try {
-    const order = await readFile('orders', phone, `${orderID}.json`);
-    if (order.isFinished) return {result: 'Order cannot be updated as it is finished!', statusCode: 400};
-    try {
-      const isBodyValid = await validateBody(body);
-      if (!isBodyValid) return {result: 'Invalid payload!', statusCode: 400};
-      body.isFinished = false;
-      try {
-        await updateFile('orders', phone, `${orderID}.json`, body);
-        setTimeout(() => prepareOrder(phone, orderID), body.items.length * 1000 * 60);
-        return {result: 'Order updated!', statusCode: 200};
-      } catch (err) {
-        console.log(err);
-        return {result: 'Error updating payload!', statusCode: 500};        
-      }
-    } catch (err) {
-      console.log(err);
-      return {result: 'Error validating payload!', statusCode: 500};
-    }
-  } catch (err) {
-    console.log(err);
-    return {result: 'Order not found!', statusCode: 404};
   }
 };
 
@@ -136,4 +99,4 @@ const _delete = async ({ queryParams, token }) => {
   }
 };
 
-module.exports = { _get, _post, _put, _delete };
+module.exports = { _get, _post, _delete, __createOrdersCollection };
