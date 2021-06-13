@@ -1,10 +1,6 @@
 const http = require('http');
 const PORT = process.env.PORT || 3000;
-const userHandlers  = require('./handlers/userHandlers.js');
-const itemHandlers  = require('./handlers/itemHandlers.js');
-const tokenHandlers = require('./handlers/tokenHandlers.js');
-const cartHandlers  = require('./handlers/cartHandlers.js');
-const orderHandlers = require('./handlers/orderHandlers.js');
+const routing = require('./routing.js');
 const { receiveArgs } = require('./lib/utils.js');
 
 const parseQueryParams = ({ url, headers }) => {
@@ -18,41 +14,6 @@ const parseQueryParams = ({ url, headers }) => {
     queryParams[key] = value;
   }
   return { queryParams, endpoint };
-};
-
-const routing = {
-  '/': {
-    get: async () => 'Welcome to the main page!',
-  },
-  '/users': {
-    get:    userHandlers._get,
-    post:   userHandlers._post,
-    put:    userHandlers._put,
-    delete: userHandlers._delete,
-  },
-  '/tokens': {
-    get:    tokenHandlers._get,
-    post:   tokenHandlers._post,
-    put:    tokenHandlers._put,
-    delete: tokenHandlers._delete,
-  },
-  '/items': {
-    get:    itemHandlers._get,
-    post:   itemHandlers._post,
-    put:    itemHandlers._put,
-    delete: itemHandlers._delete,
-  },
-  '/cart': {
-    get:    cartHandlers._get,
-    post:   cartHandlers._post,
-    put:    cartHandlers._put,
-    delete: cartHandlers._delete,
-  },
-  '/orders': {
-    get:    orderHandlers._get,
-    post:   orderHandlers._post,
-    delete: orderHandlers._delete,
-  },  
 };
 
 const notFound = (res) => {
