@@ -2,8 +2,11 @@ const { createOptions } = require('../../lib/stripe.js')
 const { request } = require('../../lib/utils.js');
 
 // createToken => POST /v1/tokens
-const createCardToken = async (number = '', exp_month = 0, exp_year = 0, cvc = 0) => {
-  const card = { number, exp_month, exp_year, cvc };
+const createCardToken = async (cardInfo = {number: '', exp_month: '', exp_year: '', cvc: ''}) => {
+  const card = {};
+  Object.keys(cardInfo).forEach(key => {
+    card[`card[${key}]`] = cardInfo[key];
+  });
   const strPayload = new URLSearchParams(card).toString();
   const options = createOptions('post', 'tokens', strPayload);
   try {

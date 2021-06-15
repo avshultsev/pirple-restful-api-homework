@@ -3,21 +3,21 @@ const { toHash, validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 const { MIN_PHONE_NUMBER_LENGTH } = require('../constants.js');
 const orderHandlers = require('./orderHandlers.js');
+const tokenHandlers = require('./stripeHandlers/tokenHandlers.js');
+const customerHandlers = require('./stripeHandlers/customerHandlers.js');
 
 const _get = async ({ queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
-  if (tokenVerified) {
-    try {
-      const result = await readFile('users', `${phone}.json`);
-      delete result.password;
-      return {result, statusCode: 200};
-    } catch (err) {
-      console.log(err);
-      return {result: 'User not found!', statusCode: 404}
-    }
+  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  try {
+    const result = await readFile('users', `${phone}.json`);
+    delete result.password;
+    return { result, statusCode: 200 };
+  } catch (err) {
+    console.log(err);
+    return { result: 'User not found!', statusCode: 404 }
   }
-  return {result: 'Unauthenticated!', statusCode: 403};
 };
 
 const _post = async ({ body }) => {
@@ -30,11 +30,16 @@ const _post = async ({ body }) => {
   };
   validPayload.password = toHash(password);
   validPayload.orders = [];
+  const { firstName, lastName, phone } = validPayload;
   try {
-    await Promise.all([
-      createFile('users', `${phone}.json`, validPayload),
-      orderHandlers.__createOrdersCollection(phone),
-    ]);
+    customerHandlers.createCustomer({ name: firstName + ' ' + lastName, phone })
+      .then(customer => {
+        validPayload.customerID = customer.id;
+        return Promise.all([
+          createFile('users', `${phone}.json`, validPayload),
+          orderHandlers.__createOrdersCollection(phone),
+        ]);
+      }).catch(err => { throw err });
     return {result: 'File created successfully!', statusCode: 200};
   } catch (err) {
     console.log(err);
@@ -45,52 +50,42 @@ const _post = async ({ body }) => {
 const _put = async ({ body, queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
-  if (tokenVerified) {
-    const required = ['firstName', 'lastName', 'phone', 'password'];
-    const validPayload = validatePayload(required, body);
-    if (!validPayload || body.phone.length < MIN_PHONE_NUMBER_LENGTH) {
-      return {result: 'Missing the required fields!', statusCode: 400};
-    }
-    validPayload.password = toHash(body.password);
-    if (phone !== body.phone) {
-      try {
-        await Promise.all([
-          rename('users', `${phone}.json`, `${validPayload.phone}.json`),
-          rename('carts', `${phone}.json`, `${validPayload.phone}.json`), // change to '_put' method
-          rename('orders', phone, body.phone) // change to '_put' method
-        ]);
-      } catch (err) { // if rename fails - set the phone to one from queryParams
-        console.log('Error renaming file!', err);
-        validPayload.phone = phone;
-      }
-    };
-    try {
-      await updateFile('users', `${validPayload.phone}.json`, validPayload);
-      return {result: validPayload, statusCode: 200};
-    } catch (err) {
-      console.log(err);
-      return {result: 'User not found!', statusCode: 404};
-    }
+  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  const required = ['firstName', 'lastName', 'password', 'customerID'];
+  const validPayload = validatePayload(required, body);
+  if (!validPayload) return { result: 'Missing the required fields!', statusCode: 400 };
+  validPayload.password = toHash(body.password);
+  if (body.card) {
+    const cardToken = await tokenHandlers.createCardToken(body.card);
+    validPayload.source = cardToken.id;
   }
-  return {result: 'Unauthenticated!', statusCode: 403};
+  const { customerID } = validPayload;
+  try {
+    await Promise.all([
+      customerHandlers.updateCustomer(customerID, validPayload), // to bind card to a customer we pass a token
+      updateFile('users', `${validPayload.phone}.json`, {...validPayload, source: cardToken.card.id}), // but in out DB we save cardID itself
+    ]);
+    return { result: validPayload, statusCode: 200 };
+  } catch (err) {
+    console.log(err);
+    return { result: 'User not found!', statusCode: 404 };
+  }
 };
 
 const _delete = async ({ queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
-  if (tokenVerified) {
-    try {
-      await Promise.all([
-        deleteFile('users', `${phone}.json`),
-        deleteFile('orders', phone) // change to '_delete' method
-      ]);
-      return {result: 'File deleted successfully!', statusCode: 200};
-    } catch (err) {
-      console.log(err);
-      return {result: 'User not found!', statusCode: 404};
-    }
+  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  try {
+    await Promise.all([
+      deleteFile('users', `${phone}.json`),
+      deleteFile('orders', phone) // change to '_delete' method
+    ]);
+    return { result: 'File deleted successfully!', statusCode: 200 };
+  } catch (err) {
+    console.log(err);
+    return { result: 'User not found!', statusCode: 404 };
   }
-  return {result: 'Unauthenticated!', statusCode: 403};
 };
 
 module.exports = { _get, _post, _put, _delete };
