@@ -2,7 +2,6 @@ const { createFile, readFile, updateFile, deleteFile, rename, createFolder } = r
 const { toHash, validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 const { MIN_PHONE_NUMBER_LENGTH } = require('../constants.js');
-const orderHandlers = require('./orderHandlers.js');
 const tokenHandlers = require('./stripeHandlers/tokenHandlers.js');
 const customerHandlers = require('./stripeHandlers/customerHandlers.js');
 
@@ -33,10 +32,7 @@ const _post = async ({ body }) => {
   return customerHandlers.createCustomer({ name: firstName + ' ' + lastName, phone })
     .then(customer => {
       validPayload.customerID = customer.id;
-      return Promise.all([
-        createFile('users', `${phone}.json`, validPayload),
-        orderHandlers.__createOrdersCollection(phone),
-      ]);
+      return createFile('users', `${phone}.json`, validPayload);
     })
     .then(() => ({ result: 'File created successfully!', statusCode: 200 }))
     .catch(err => {
@@ -80,10 +76,7 @@ const _delete = async ({ queryParams, token }) => {
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return { result: 'Unauthenticated!', statusCode: 403 };
   try {
-    await Promise.all([
-      deleteFile('users', `${phone}.json`),
-      deleteFile('orders', phone) // change to '_delete' method
-    ]);
+    await deleteFile('users', `${phone}.json`);
     return { result: 'File deleted successfully!', statusCode: 200 };
   } catch (err) {
     console.log(err);

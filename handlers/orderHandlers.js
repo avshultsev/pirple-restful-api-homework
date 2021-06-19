@@ -3,7 +3,7 @@ const { createFile, readFile, updateFile, deleteFile, listItems, createFolder } 
 const { createRandomString } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
-const __createOrdersCollection = async (phone) => {
+const _post = async (phone) => { // creates a folder for order files
   try {
     await createFolder('orders', phone);
   } catch (err) {
@@ -30,7 +30,7 @@ const _get = async ({ queryParams, token }) => {
   }
 };
 
-const _post = async ({ queryParams, token }) => {
+const _put = async ({ queryParams, token }) => { // updates the orders folder with a new order file
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
@@ -39,6 +39,7 @@ const _post = async ({ queryParams, token }) => {
     readFile('users', `${phone}.json`),
   ])
   .then(([cart, user]) => {
+    if (cart.items.length === 0) throw new Error('Error creating an order with empty cart!');
     const orderID = createRandomString(ORDER_ID_LENGTH);
     user.orders.push(orderID);
     const initialCart = { items: [], total: 0 };
@@ -51,11 +52,11 @@ const _post = async ({ queryParams, token }) => {
   .then(() => ({ result: 'Order accepted!', statusCode: 200 }))
   .catch(err => {
     console.log(err);
-    return { result: 'Error creating an order!', statusCode: 400 }
+    return { result: 'Error creating an order!', statusCode: 400 };
   });
 };
 
-const __deleteOrdersCollection = async (phone) => {
+const _delete = async (phone) => { // deletes entire folder with orders
   try {
     await deleteFile('orders', phone);
     return { result: 'Orders folder deleted successfully!', statusCode: 200 };
@@ -65,4 +66,4 @@ const __deleteOrdersCollection = async (phone) => {
   }
 };
 
-module.exports = { _get, _post, __deleteOrdersCollection, __createOrdersCollection };
+module.exports = { _get, _post, _put, _delete };
