@@ -2,6 +2,14 @@ const { createFile, readFile, updateFile, deleteFile } = require('../lib/crud.js
 const { validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
+const isValid = (item, menuItem) => {
+  const { price, size } = item;
+  const { prices, sizes } = menuItem;
+  const sizeIdx = sizes.indexOf(size);
+  const priceIdx = prices.indexOf(price);
+  return (priceIdx > -1 && sizeIdx > -1 && sizeIdx === priceIdx);
+};
+
 const _get = async ({ queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
@@ -35,53 +43,51 @@ const _put = async ({ body, queryParams, token }) => {
   const required = ['name', 'price', 'size'];
   const validPayload = validatePayload(required, body);
   if (!validPayload) return {result: 'Missing required fields!', statusCode: 400};
-  try {
-    const newCartItem = await readFile('items', `${validPayload.name}.json`);
-    const { prices, sizes } = newCartItem;
-    const { price, size } = validPayload;
-    const condition = !prices.includes(price) || !sizes.includes(size) || (sizes.indexOf(size) !== prices.indexOf(price));
-    if (condition) return {result: 'Invalid payload!', statusCode: 400};
-    try {
-      const cart = await readFile('carts', `${phone}.json`);
+  return readFile('items', `${validPayload.name}.json`)
+    .then(menuItem => {
+      const itemValid = isValid(validPayload, menuItem);
+      if (!itemValid) throw new Error('Invalid payload!');
+      return readFile('carts', `${phone}.json`);
+    })
+    .then(cart => {
       cart.items.push(validPayload);
-      cart.total += price;
-      try {
-        await updateFile('carts', `${phone}.json`, cart);
-        return {result: cart, statusCode: 200};
-      } catch (err) {
-        return {result: 'Error updating file!', statusCode: 500};
-      }
-    } catch (err) {
+      cart.total += validPayload.price;
+      return updateFile('carts', `${phone}.json`, cart);
+    })
+    .then(cart => ({ result: cart, statusCode: 200 }))
+    .catch(err => {
       console.log(err);
-      return {result: 'Cart not found!', statusCode: 404};
-    }
-  } catch (err) {
-    return {result: 'Item not found!', statusCode: 404};
-  }
+      return { result: 'Error updating cart!', statusCode: 400 };
+    });
 };
 
 const _delete = async ({ queryParams, token }) => {
   const { phone, name, size } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
-  try {
-    const cart = await readFile('carts', `${phone}.json`);
-    const itemIdx = cart.items.findIndex(item => (item.name === name && item.size === parseInt(size)));
-    const item = cart.items[itemIdx];
-    if (!item) return {result: 'Item for deletion not found!', statusCode: 400};
-    cart.items.splice(itemIdx, 1);
-    cart.total -= item.price;
+  if (!name && !size) {
     try {
-      await updateFile('carts', `${phone}.json`, cart);
-      return {result: cart, statusCode: 200};
+      await deleteFile('carts', `${phone}.json`);
+      return { result: `Cart of user ${phone} deleted successfully!`, statusCode: 200 };
     } catch (err) {
       console.log(err);
-      return {result: 'Error updating cart file!', statusCode: 500};
+      return { result: `Error deleting cart of user ${phone}!`, statusCode: 500 };
     }
-  } catch (err) {
-    console.log(err);
-    return {result: 'Cart not found!', statusCode: 404};
-  }
+  };
+  return readFile('carts', `${phone}.json`)
+    .then(cart => {
+      const itemIdx = cart.items.findIndex(item => (item.name === name && item.size === parseInt(size)));
+      const item = cart.items[itemIdx];
+      if (!item) throw new Error('Item for deletion not found!');
+      cart.items.splice(itemIdx, 1);
+      cart.total -= item.price;
+      return updateFile('carts', `${phone}.json`, cart); 
+    })
+    .then(cart => ({ result: cart, statusCode: 200 }))
+    .catch(err => {
+      console.log(err);
+      return { result: 'Error deleting cart item!', statusCode: 500 };
+    });
 };
 
 module.exports = { _get, _post, _put, _delete };

@@ -9,7 +9,7 @@ const customerHandlers = require('./stripeHandlers/customerHandlers.js');
 const _get = async ({ queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
-  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  if (!tokenVerified) return { result: 'Unauthenticated!', statusCode: 403 };
   try {
     const result = await readFile('users', `${phone}.json`);
     delete result.password;
@@ -23,59 +23,62 @@ const _get = async ({ queryParams, token }) => {
 const _post = async ({ body }) => {
   const required = ['firstName', 'lastName', 'phone', 'password'];
   const validPayload = validatePayload(required, body);
-  if (!validPayload) return {result: 'Missing required fields!', statusCode: 400};
-  const { phone, password } = validPayload;
+  if (!validPayload) return { result: 'Missing required fields!', statusCode: 400 };
+  const { phone, password, firstName, lastName } = validPayload;
   if (phone.length < MIN_PHONE_NUMBER_LENGTH || /\D/.test(phone)) {
-    return {result: 'Phone number too short or contains non numerical chars!', statusCode: 400};
+    return { result: 'Phone number too short or contains non numerical chars!', statusCode: 400 };
   };
   validPayload.password = toHash(password);
   validPayload.orders = [];
-  const { firstName, lastName, phone } = validPayload;
-  try {
-    customerHandlers.createCustomer({ name: firstName + ' ' + lastName, phone })
-      .then(customer => {
-        validPayload.customerID = customer.id;
-        return Promise.all([
-          createFile('users', `${phone}.json`, validPayload),
-          orderHandlers.__createOrdersCollection(phone),
-        ]);
-      }).catch(err => { throw err });
-    return {result: 'File created successfully!', statusCode: 200};
-  } catch (err) {
-    console.log(err);
-    return {result: 'User already exists!', statusCode: 500};
-  }
+  return customerHandlers.createCustomer({ name: firstName + ' ' + lastName, phone })
+    .then(customer => {
+      validPayload.customerID = customer.id;
+      return Promise.all([
+        createFile('users', `${phone}.json`, validPayload),
+        orderHandlers.__createOrdersCollection(phone),
+      ]);
+    })
+    .then(() => ({ result: 'File created successfully!', statusCode: 200 }))
+    .catch(err => {
+      console.log(err);
+      return { result: 'Error creating Stripe customer!', statusCode: 400 };
+    });
 };
 
 const _put = async ({ body, queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
-  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
-  const required = ['firstName', 'lastName', 'password', 'customerID'];
+  if (!tokenVerified) return { result: 'Unauthenticated!', statusCode: 403 };
+  const required = ['firstName', 'lastName', 'phone', 'password', 'customerID'];
   const validPayload = validatePayload(required, body);
   if (!validPayload) return { result: 'Missing the required fields!', statusCode: 400 };
   validPayload.password = toHash(body.password);
-  if (body.card) {
-    const cardToken = await tokenHandlers.createCardToken(body.card);
-    validPayload.source = cardToken.id;
-  }
-  const { customerID } = validPayload;
-  try {
-    await Promise.all([
-      customerHandlers.updateCustomer(customerID, validPayload), // to bind card to a customer we pass a token
-      updateFile('users', `${validPayload.phone}.json`, {...validPayload, source: cardToken.card.id}), // but in out DB we save cardID itself
-    ]);
-    return { result: validPayload, statusCode: 200 };
-  } catch (err) {
-    console.log(err);
-    return { result: 'User not found!', statusCode: 404 };
-  }
+  const updPayload = { name: validPayload.firstName + ' ' + validPayload.lastName }; // add email,
+  return readFile('users', `${phone}.json`)
+    .then(({ orders }) => {
+      validPayload.orders = orders;
+      if (body.card) return tokenHandlers.createCardToken(body.card);
+    }).then(cardToken => {
+      if (cardToken) {
+        updPayload.source = cardToken.id; // tok_...
+        validPayload.source = cardToken.card.id; // card_...
+      }
+      return Promise.all([ // update customer with all required info
+        customerHandlers.updateCustomer(validPayload.customerID, updPayload),
+        updateFile('users', `${validPayload.phone}.json`, validPayload),
+      ]);
+    })
+    .then(() => ({ result: validPayload, statusCode: 200 }))
+    .catch(err => {
+      console.log(err);
+      return { result: `Error updating user ${phone}!`, statusCode: 500 };
+    });
 };
 
 const _delete = async ({ queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
-  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  if (!tokenVerified) return { result: 'Unauthenticated!', statusCode: 403 };
   try {
     await Promise.all([
       deleteFile('users', `${phone}.json`),

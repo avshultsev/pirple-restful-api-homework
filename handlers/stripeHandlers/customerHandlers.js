@@ -3,8 +3,7 @@ const { request } = require("../../lib/utils");
 
 // @TODO: add to array of required when creating new user ['card_number', 'exp_month', 'exp_year', 'cvc'] 
 // @TODO: add full crud for customers as we suppose user info can be modified/deleted/...etc
-const createCustomer = async ({ name = '', phone = '' }) => {
-  const payload = { name, cardToken, phone };
+const createCustomer = async (payload = { name: '', phone: '' }) => {
   const strPayload = new URLSearchParams(payload).toString();
   const options = createOptions('post', 'customers', strPayload);
   try {
