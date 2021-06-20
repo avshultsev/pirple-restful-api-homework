@@ -20,16 +20,17 @@ const _get = async ({ queryParams, token }) => {
 };
 
 const _post = async ({ body }) => {
-  const required = ['firstName', 'lastName', 'phone', 'password'];
+  const required = ['firstName', 'lastName', 'phone', 'password', 'email', 'address'];
   const validPayload = validatePayload(required, body);
   if (!validPayload) return { result: 'Missing required fields!', statusCode: 400 };
-  const { phone, password, firstName, lastName } = validPayload;
+  const { phone, password, firstName, lastName, email, address } = validPayload;
   if (phone.length < MIN_PHONE_NUMBER_LENGTH || /\D/.test(phone)) {
     return { result: 'Phone number too short or contains non numerical chars!', statusCode: 400 };
   };
   validPayload.password = toHash(password);
   validPayload.orders = [];
-  return customerHandlers.createCustomer({ name: firstName + ' ' + lastName, phone })
+  const stripeCustomer = { name: firstName + ' ' + lastName, phone, email, address };
+  return customerHandlers.createCustomer(stripeCustomer)
     .then(customer => {
       validPayload.customerID = customer.id;
       return createFile('users', `${phone}.json`, validPayload);
@@ -45,22 +46,24 @@ const _put = async ({ body, queryParams, token }) => {
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return { result: 'Unauthenticated!', statusCode: 403 };
-  const required = ['firstName', 'lastName', 'phone', 'password', 'customerID'];
+  const required = ['firstName', 'lastName', 'phone', 'password', 'email', 'address'];
   const validPayload = validatePayload(required, body);
   if (!validPayload) return { result: 'Missing the required fields!', statusCode: 400 };
   validPayload.password = toHash(body.password);
-  const updPayload = { name: validPayload.firstName + ' ' + validPayload.lastName }; // add email,
+  const { firstName, lastName, email, address } = validPayload;
+  const stripeCustomer = { name: firstName + ' ' + lastName, email, address };
   return readFile('users', `${phone}.json`)
-    .then(({ orders }) => {
+    .then(({ orders, customerID }) => {
+      validPayload.customerID = customerID;
       validPayload.orders = orders;
       if (body.card) return tokenHandlers.createCardToken(body.card);
     }).then(cardToken => {
       if (cardToken) {
-        updPayload.source = cardToken.id; // tok_...
+        stripeCustomer.source = cardToken.id; // tok_...
         validPayload.source = cardToken.card.id; // card_...
       }
       return Promise.all([ // update customer with all required info
-        customerHandlers.updateCustomer(validPayload.customerID, updPayload),
+        customerHandlers.updateCustomer(validPayload.customerID, stripeCustomer),
         updateFile('users', `${validPayload.phone}.json`, validPayload),
       ]);
     })
