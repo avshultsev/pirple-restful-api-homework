@@ -22,9 +22,6 @@ module.exports = {
   },
   '/items': {
     get:    itemHandlers._get,
-    post:   itemHandlers._post,
-    put:    itemHandlers._put,
-    delete: itemHandlers._delete,
   },
   '/cart': {
     get:    cartHandlers._get,
