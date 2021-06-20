@@ -1,6 +1,7 @@
 const { ORDER_ID_LENGTH } = require('../constants.js');
 const { createFile, readFile, updateFile, deleteFile, listItems, createFolder } = require('../lib/crud.js');
 const { createRandomString } = require('../lib/utils.js');
+const { chargeCard } = require('./stripeHandlers/chargeHandlers.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
 const _post = async ({ queryParams, token }) => { // creates a folder for order files
@@ -9,8 +10,10 @@ const _post = async ({ queryParams, token }) => { // creates a folder for order 
   if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
   try {
     await createFolder('orders', phone);
+    return { result: `Orders folder for user ${phone} created successfully!`, statusCode: 200 };
   } catch (err) {
     console.log('Folder already exists!');
+    return { result: `Error creating folder for user ${phone}!`, statusCode: 500 };
   }
 };
 
@@ -51,6 +54,11 @@ const _put = async ({ queryParams, token }) => { // updates the orders folder wi
   ])
   .then(([cart, user]) => {
     if (cart.items.length === 0) throw new Error('Error creating an order with empty cart!');
+    if (!user.source) throw new Error('Error attempting to make an order with no payment source attached!');
+    return Promise.all([chargeCard(user.customerID, cart.total), cart, user]);
+  })
+  .then(([charge, cart, user]) => {
+    cart.chargeID = charge.id;
     const orderID = createRandomString(ORDER_ID_LENGTH);
     user.orders.push(orderID);
     const initialCart = { items: [], total: 0 };
