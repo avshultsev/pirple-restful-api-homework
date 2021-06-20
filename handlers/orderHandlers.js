@@ -3,7 +3,10 @@ const { createFile, readFile, updateFile, deleteFile, listItems, createFolder } 
 const { createRandomString } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
-const _post = async (phone) => { // creates a folder for order files
+const _post = async ({ queryParams, token }) => { // creates a folder for order files
+  const { phone } = queryParams;
+  const tokenVerified = await verifyToken(token, phone);
+  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
   try {
     await createFolder('orders', phone);
   } catch (err) {
@@ -12,9 +15,17 @@ const _post = async (phone) => { // creates a folder for order files
 };
 
 const _get = async ({ queryParams, token }) => {
-  const { phone } = queryParams;
+  const { phone, order } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
+  if (order) { // if we have an orderID then return a specific order, if not - return all orders
+    try {
+      const orderInfo = await readFile('orders', phone, `${order}.json`);
+      return { result: orderInfo, statusCode: 200 };
+    } catch (err) {
+      return { result: `Order with ID ${order} not found!`, statusCode: 404 };
+    }
+  }
   try {
     const orders = await listItems('orders', phone);
     const readOrderFiles = order => readFile('orders', phone, order);
@@ -56,7 +67,10 @@ const _put = async ({ queryParams, token }) => { // updates the orders folder wi
   });
 };
 
-const _delete = async (phone) => { // deletes entire folder with orders
+const _delete = async ({ queryParams }) => { // deletes entire folder with orders
+  const { phone } = queryParams;
+  const tokenVerified = await verifyToken(token, phone);
+  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
   try {
     await deleteFile('orders', phone);
     return { result: 'Orders folder deleted successfully!', statusCode: 200 };
