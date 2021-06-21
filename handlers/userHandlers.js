@@ -29,7 +29,7 @@ const _post = async ({ body }) => {
   };
   validPayload.password = toHash(password);
   validPayload.orders = [];
-  const stripeCustomer = { name: firstName + ' ' + lastName, phone, email, address };
+  const stripeCustomer = { name: firstName + ' ' + lastName, phone, email };
   return customerHandlers.createCustomer(stripeCustomer)
     .then(customer => {
       validPayload.customerID = customer.id;
@@ -51,7 +51,7 @@ const _put = async ({ body, queryParams, token }) => {
   if (!validPayload) return { result: 'Missing the required fields!', statusCode: 400 };
   validPayload.password = toHash(body.password);
   const { firstName, lastName, email, address } = validPayload;
-  const stripeCustomer = { name: firstName + ' ' + lastName, email, address };
+  const stripeCustomer = { name: firstName + ' ' + lastName, email };
   return readFile('users', `${phone}.json`)
     .then(({ orders, customerID }) => {
       validPayload.customerID = customerID;

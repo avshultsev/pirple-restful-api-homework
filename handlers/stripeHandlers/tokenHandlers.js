@@ -1,4 +1,4 @@
-const { createOptions } = require('../../lib/stripe.js')
+const { createStripeOptions } = require('../../lib/api.js')
 const { request } = require('../../lib/utils.js');
 
 // createToken => POST /v1/tokens
@@ -8,7 +8,7 @@ const createCardToken = async (cardInfo = {number: '', exp_month: '', exp_year: 
     card[`card[${key}]`] = cardInfo[key];
   });
   const strPayload = new URLSearchParams(card).toString();
-  const options = createOptions('post', 'tokens', strPayload);
+  const options = createStripeOptions('post', 'tokens', strPayload);
   try {
     const token = await request(options, strPayload);
     return token;
@@ -19,7 +19,7 @@ const createCardToken = async (cardInfo = {number: '', exp_month: '', exp_year: 
 
 // getToken => GET /v1/tokens/:tokenID
 const retreiveCardToken = async (tokenID) => {
-  const options = createOptions('get', `tokens/${tokenID}`);
+  const options = createStripeOptions('get', `tokens/${tokenID}`);
   try {
     const token = await request(options);
     return token;

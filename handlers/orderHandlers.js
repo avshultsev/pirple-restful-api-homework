@@ -1,6 +1,7 @@
 const { ORDER_ID_LENGTH } = require('../constants.js');
 const { createFile, readFile, updateFile, deleteFile, listItems, createFolder } = require('../lib/crud.js');
 const { createRandomString } = require('../lib/utils.js');
+const { sendEmail } = require('./mailgunHandlers/sendEmail.js');
 const { chargeCard } = require('./stripeHandlers/chargeHandlers.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
@@ -66,6 +67,7 @@ const _put = async ({ queryParams, token }) => { // updates the orders folder wi
       createFile('orders', phone, `${orderID}.json`, cart),
       updateFile('carts', `${phone}.json`, initialCart),
       updateFile('users', `${phone}.json`, user),
+      sendEmail(cart, user),
     ]);
   })
   .then(() => ({ result: 'Order accepted!', statusCode: 200 }))

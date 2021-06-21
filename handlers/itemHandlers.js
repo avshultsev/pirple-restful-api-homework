@@ -13,4 +13,4 @@ const _get = async () => {
   }
 };
 
-module.exports = { _get, _post, _put, _delete };
+module.exports = { _get };
