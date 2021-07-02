@@ -1,4 +1,4 @@
-const { createFile, readFile, updateFile, deleteFile, rename, createFolder } = require('../lib/crud.js');
+const { createFile, readFile, updateFile, deleteFile } = require('../lib/crud.js');
 const { toHash, validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 const { MIN_PHONE_NUMBER_LENGTH } = require('../constants.js');
@@ -87,4 +87,5 @@ const _delete = async ({ queryParams, token }) => {
   }
 };
 
-module.exports = { _get, _post, _put, _delete };
+const userHandlers = { get: _get, post: _post, put: _put, delete:_delete };
+module.exports = userHandlers;

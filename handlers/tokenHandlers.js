@@ -77,4 +77,5 @@ const _delete = async ({ queryParams }) => {
   }
 };
 
-module.exports = { _get, _post, _put, _delete, verifyToken };
+const tokenHandlers = { get: _get, post: _post, put: _put, delete: _delete, verifyToken };
+module.exports = tokenHandlers;

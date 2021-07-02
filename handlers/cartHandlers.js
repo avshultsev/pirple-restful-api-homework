@@ -90,4 +90,5 @@ const _delete = async ({ queryParams, token }) => {
     });
 };
 
-module.exports = { _get, _post, _put, _delete };
+const cartHandlers = { get: _get, post: _post, put: _put, delete: _delete };
+module.exports = cartHandlers;

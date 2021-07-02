@@ -13,4 +13,5 @@ const _get = async () => {
   }
 };
 
-module.exports = { _get };
+const itemHandlers = { get: _get };
+module.exports = itemHandlers;

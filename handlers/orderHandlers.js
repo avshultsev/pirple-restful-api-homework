@@ -90,4 +90,5 @@ const _delete = async ({ queryParams }) => { // deletes entire folder with order
   }
 };
 
-module.exports = { _get, _post, _put, _delete };
+const orderHandlers = { get: _get, post: _post, put: _put, delete: _delete };
+module.exports = orderHandlers;
