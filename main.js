@@ -16,43 +16,15 @@ const MIME_TYPES = {
   jpeg: 'image/jpeg',
 };
 
-const cache = new Map();
 const staticPath = path.join(process.cwd(), 'public');
-
-const consumeReadStream = async (stream) => {
-  let content = '';
-  for await (const chunk of stream) content += chunk;
-  return content;
-};
-
-const getHeadAndFooter = async () => {
-  const headPath = path.join(staticPath, '_head.html');
-  const footerPath = path.join(staticPath, '_footer.html');
-  let head = cache.get(headPath);
-  let footer = cache.get(footerPath);
-  if (head && footer) return [head, footer];
-  const promises = [headPath, footerPath]
-    .map(filepath => createReadStream(filepath))
-    .map(consumeReadStream);
-  [head, footer] = await Promise.all(promises);
-  cache.set(headPath, head);
-  cache.set(footerPath, footer);
-  return [head, footer];
-};
-
 const serveFile = async (fileName, ext) => {
   const name = fileName + '.' + ext;
   const filePath = path.join(staticPath, name);
   try {
     await fs.access(filePath);
-    const stream = createReadStream(filePath);
-    const content = await consumeReadStream(stream);
-    if (ext !== 'html') return content;
-    const [head, footer] = await getHeadAndFooter();
-    return head + content + footer;
+    return createReadStream(filePath);
   } catch (err) {
-    content = await serveFile('notFound', 'html');
-    return content;
+    return serveFile('notFound', 'html');
   }
 };
 
@@ -95,13 +67,18 @@ const listener = async (req, res) => {
   const fileExt = ext || 'html';
   const type = MIME_TYPES[fileExt];
   res.writeHead(200, { 'Content-Type': type });
-  if (type.startsWith('image/')) {
-    const imgPath = path.join(staticPath, fileName);
-    const stream = createReadStream(imgPath);
-    return stream.pipe(res);
-  }
-  const content = await serveFile(name, fileExt);
-  res.end(content);
+  const contentStream = await serveFile(name, fileExt);
+  if (fileExt !== 'html') return contentStream.pipe(res);
+  const promises = ['_head', '_footer'].map(e => serveFile(e, 'html'));
+  const [headStream, footerStream] = await Promise.all(promises);
+  [headStream, contentStream, footerStream]
+    .forEach((stream, i, arr) => {
+      stream.on('end', () => {
+        const next = arr[i + 1];
+        next && next.pipe(res, { end: i + 1 === arr.length - 1 });
+      });
+    });
+  headStream.pipe(res, { end: false });
 };
 
 http
