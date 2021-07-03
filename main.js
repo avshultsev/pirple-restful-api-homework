@@ -1,6 +1,6 @@
 const http = require('http');
 const path = require('path');
-const fs   = require('fs');
+const { promises: fs, createReadStream } = require('fs');
 const PORT = process.env.PORT || 3000;
 const routing = require('./routing.js');
 const { receiveArgs } = require('./lib/utils.js');
@@ -14,11 +14,45 @@ const MIME_TYPES = {
   svg: 'image/svg+xml',
 };
 
+const cache = new Map();
 const staticPath = path.join(process.cwd(), 'public');
-const serveFile = fileName => {
-  const filePath = path.join(staticPath, fileName);
-  const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
-  return stream;
+
+const consumeReadStream = async (stream) => {
+  let content = '';
+  for await (const chunk of stream) content += chunk;
+  return content;
+};
+
+const getHeadAndFooter = async () => {
+  const headPath = path.join(staticPath, '_head.html');
+  const footerPath = path.join(staticPath, '_footer.html');
+  let head = cache.get(headPath);
+  let footer = cache.get(footerPath);
+  if (head && footer) return [head, footer];
+  const promises = [headPath, footerPath]
+    .map(filepath => createReadStream(filepath, { encoding: 'utf-8' }))
+    .map(consumeReadStream);
+  [head, footer] = await Promise.all(promises);
+  cache.set(headPath, head);
+  cache.set(footerPath, footer);
+  return [head, footer];
+};
+
+const serveFile = async (fileName, ext) => {
+  const name = fileName + '.' + ext;
+  const filePath = path.join(staticPath, name);
+  try {
+    await fs.access(filePath);
+    const stream = createReadStream(filePath, { encoding: 'utf-8' });
+    const content = await consumeReadStream(stream);
+    if (ext !== 'html') return content;
+    const [head, footer] = await getHeadAndFooter();
+    return head + content + footer;
+  } catch (err) {
+    console.log(err);
+    content = await serveFile('notFound', 'html');
+    return content;
+  }
 };
 
 const parseQueryParams = ({ url, headers }) => {
@@ -56,16 +90,12 @@ const listener = async (req, res) => {
     return res.end(JSON.stringify({ result, body }));
   }
   const fileName = url === '/' ? 'index.html' : url;
-  const fileExt = path.extname(fileName).substring(1) || 'html';
+  const [name, ext] = fileName.split('.');
+  const fileExt = ext || 'html';
   const type = MIME_TYPES[fileExt];
   res.writeHead(200, { 'Content-Type': type });
-  const stream = serveFile(fileName);
-  stream.on('error', (err) => {
-    console.log(err);
-    const notFound = serveFile('notFound.html');
-    notFound.pipe(res);
-  });
-  stream.pipe(res);
+  const content = await serveFile(name, fileExt);
+  res.end(content);
 };
 
 http
