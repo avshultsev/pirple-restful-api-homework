@@ -12,6 +12,8 @@ const MIME_TYPES = {
   png: 'image/png',
   ico: 'image/x-icon',
   svg: 'image/svg+xml',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
 };
 
 const cache = new Map();
@@ -30,7 +32,7 @@ const getHeadAndFooter = async () => {
   let footer = cache.get(footerPath);
   if (head && footer) return [head, footer];
   const promises = [headPath, footerPath]
-    .map(filepath => createReadStream(filepath, { encoding: 'utf-8' }))
+    .map(filepath => createReadStream(filepath))
     .map(consumeReadStream);
   [head, footer] = await Promise.all(promises);
   cache.set(headPath, head);
@@ -43,13 +45,12 @@ const serveFile = async (fileName, ext) => {
   const filePath = path.join(staticPath, name);
   try {
     await fs.access(filePath);
-    const stream = createReadStream(filePath, { encoding: 'utf-8' });
+    const stream = createReadStream(filePath);
     const content = await consumeReadStream(stream);
     if (ext !== 'html') return content;
     const [head, footer] = await getHeadAndFooter();
     return head + content + footer;
   } catch (err) {
-    console.log(err);
     content = await serveFile('notFound', 'html');
     return content;
   }
@@ -94,6 +95,11 @@ const listener = async (req, res) => {
   const fileExt = ext || 'html';
   const type = MIME_TYPES[fileExt];
   res.writeHead(200, { 'Content-Type': type });
+  if (type.startsWith('image/')) {
+    const imgPath = path.join(staticPath, fileName);
+    const stream = createReadStream(imgPath);
+    return stream.pipe(res);
+  }
   const content = await serveFile(name, fileExt);
   res.end(content);
 };

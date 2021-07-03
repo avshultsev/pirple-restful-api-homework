@@ -5,3 +5,7 @@ h1 {
 .error {
   color: red;
 }
+
+div.card-image>img {
+  height: 200px;
+}
