@@ -1,4 +1,4 @@
-const { createFile, readFile, updateFile, deleteFile } = require('../lib/crud.js');
+const { createFile, readFile, updateFile, deleteFile, createFolder, rename } = require('../lib/crud.js');
 const { toHash, validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 const { MIN_PHONE_NUMBER_LENGTH } = require('../constants.js');
@@ -34,6 +34,13 @@ const _post = async ({ body }) => {
     .then(customer => {
       validPayload.customerID = customer.id;
       return createFile('users', `${phone}.json`, validPayload);
+    })
+    .then(() => {
+      const promises = [
+        createFolder('orders', phone),
+        createFile('carts', `${phone}.json`, { items: [], total: 0 }),
+      ];
+      return Promise.all(promises);
     })
     .then(() => ({ result: 'File created successfully!', statusCode: 200 }))
     .catch(err => {
@@ -79,8 +86,13 @@ const _delete = async ({ queryParams, token }) => {
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return { result: 'Unauthenticated!', statusCode: 403 };
   try {
-    await deleteFile('users', `${phone}.json`);
-    return { result: 'File deleted successfully!', statusCode: 200 };
+    const promises = [
+      deleteFile('users', `${phone}.json`),
+      deleteFile('carts', `${phone}.json`),
+      rename('orders', phone, `deleted_${phone}`),
+    ];
+    await Promise.all(promises);
+    return { result: 'User deleted successfully!', statusCode: 200 };
   } catch (err) {
     console.log(err);
     return { result: 'User not found!', statusCode: 404 };

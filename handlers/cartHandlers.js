@@ -1,4 +1,4 @@
-const { createFile, readFile, updateFile, deleteFile } = require('../lib/crud.js');
+const { readFile, updateFile } = require('../lib/crud.js');
 const { validatePayload } = require('../lib/utils.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
@@ -20,19 +20,6 @@ const _get = async ({ queryParams, token }) => {
   } catch (err) {
     console.log(err);
     return {result: 'File not found!', statusCode: 404};
-  }
-};
-
-const _post = async ({ queryParams, token }) => {
-  const { phone } = queryParams;
-  const tokenVerified = await verifyToken(token, phone);
-  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
-  try {
-    await createFile('carts', `${phone}.json`, { items: [], total: 0 });
-    return {result: `Cart created for user ${phone}!`, statusCode: 200};
-  } catch (err) {
-    console.log(err);
-    return {result: `Cart for user ${phone} already exists!`, statusCode: 400};
   }
 };
 
@@ -65,15 +52,6 @@ const _delete = async ({ queryParams, token }) => {
   const { phone, name, size } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
-  if (!name && !size) {
-    try {
-      await deleteFile('carts', `${phone}.json`);
-      return { result: `Cart of user ${phone} deleted successfully!`, statusCode: 200 };
-    } catch (err) {
-      console.log(err);
-      return { result: `Error deleting cart of user ${phone}!`, statusCode: 500 };
-    }
-  };
   return readFile('carts', `${phone}.json`)
     .then(cart => {
       const itemIdx = cart.items.findIndex(item => (item.name === name && item.size === parseInt(size)));
@@ -90,5 +68,5 @@ const _delete = async ({ queryParams, token }) => {
     });
 };
 
-const cartHandlers = { get: _get, post: _post, put: _put, delete: _delete };
+const cartHandlers = { get: _get, put: _put, delete: _delete };
 module.exports = cartHandlers;

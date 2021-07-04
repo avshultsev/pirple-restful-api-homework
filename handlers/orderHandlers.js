@@ -5,19 +5,6 @@ const { sendEmail } = require('./mailgunHandlers/sendEmail.js');
 const { chargeCard } = require('./stripeHandlers/chargeHandlers.js');
 const { verifyToken } = require('./tokenHandlers.js');
 
-const _post = async ({ queryParams, token }) => { // creates a folder for order files
-  const { phone } = queryParams;
-  const tokenVerified = await verifyToken(token, phone);
-  if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
-  try {
-    await createFolder('orders', phone);
-    return { result: `Orders folder for user ${phone} created successfully!`, statusCode: 200 };
-  } catch (err) {
-    console.log('Folder already exists!');
-    return { result: `Error creating folder for user ${phone}!`, statusCode: 500 };
-  }
-};
-
 const _get = async ({ queryParams, token }) => {
   const { phone, order } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
@@ -45,7 +32,7 @@ const _get = async ({ queryParams, token }) => {
   }
 };
 
-const _put = async ({ queryParams, token }) => { // updates the orders folder with a new order file
+const _post = async ({ queryParams, token }) => { // create a new order file in the user's orders folder
   const { phone } = queryParams;
   const tokenVerified = await verifyToken(token, phone);
   if (!tokenVerified) return {result: 'Unauthenticated!', statusCode: 403};
@@ -90,5 +77,5 @@ const _delete = async ({ queryParams }) => { // deletes entire folder with order
   }
 };
 
-const orderHandlers = { get: _get, post: _post, put: _put, delete: _delete };
+const orderHandlers = { get: _get, post: _post, delete: _delete };
 module.exports = orderHandlers;
