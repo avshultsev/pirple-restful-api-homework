@@ -1,1 +1,5 @@
-console.log('hello from index.js!');
+import processLoginForm from './processLoginForm.js'
+
+window.onload = () => {
+  processLoginForm();
+};

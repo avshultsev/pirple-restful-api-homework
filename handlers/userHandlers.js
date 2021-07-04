@@ -38,7 +38,7 @@ const _post = async ({ body }) => {
     .then(() => ({ result: 'File created successfully!', statusCode: 200 }))
     .catch(err => {
       console.log(err);
-      return { result: 'Error creating Stripe customer!', statusCode: 400 };
+      return { result: 'Customer with such phone number already exists!', statusCode: 400 };
     });
 };
 

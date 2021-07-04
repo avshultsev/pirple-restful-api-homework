@@ -60,7 +60,7 @@ const listener = async (req, res) => {
     if (bodyRequired) body = await receiveArgs(req);
     const { result, statusCode } = await handler({ body, queryParams, token });
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ result, body }));
+    return res.end(JSON.stringify({ result, statusCode }));
   }
   const fileName = url === '/' ? 'index.html' : url;
   const [name, ext] = fileName.split('.');

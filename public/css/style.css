@@ -2,8 +2,27 @@ h1 {
   color: blueviolet;
 }
 
-.error {
-  color: red;
+div.row.error {
+  display: block;
+  margin-top: 1rem;
+  width: 100%;
+  background-color: rgb(224, 112, 112);
+  border: 1px solid rgb(248, 39, 39);
+  border-radius: 5px;
+  text-align: center;
+  line-height: 1.5rem;
+}
+
+div.row.error.hidden {
+  display: none;
+}
+
+div.row.error p.error-text {
+  padding-top: .9rem;
+}
+
+i.material-icons.right {
+  cursor: pointer;
 }
 
 div.card-image>img {
