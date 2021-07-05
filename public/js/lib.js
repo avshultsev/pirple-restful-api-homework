@@ -61,3 +61,16 @@ export const request = async (path = HOST, method = 'GET', payload = {}, queryOb
     console.log(err);
   }
 };
+
+export const setupLogoutButton = () => {
+  const button = document.querySelector('#logout');
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const { token } = getToken();
+    localStorage.removeItem('token');
+    request('http://localhost:3000/api/tokens', 'DELETE', {}, { token })
+      .then(() => {
+        window.location = '/';
+      });
+  });
+};

@@ -23,8 +23,18 @@
         <li class="login"><a href="/account/create">Cart</a></li>
         <li class="login"><a href="/account/create">Orders</a></li>
         <li class="login"><a href="/account/create">Account settigns</a></li>
-        <li class="login"><a href="/account/create">Logout</a></li>
+        <li class="login"><a href="#modal1" class="modal-trigger">Logout</a></li>
       </ul>
+    </div>
+    <div id="modal1" class="modal">
+      <div class="modal-content">
+        <h4 class="black-text">Logout Confirmation</h4>
+        <p class="black-text">Are you sure you want to log out?</p>
+      </div>
+      <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Stay logged in.</a>
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat" id="logout">I'm sure.</a>
+      </div>
     </div>
   </nav>
   <div class="container">
