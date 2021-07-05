@@ -11,14 +11,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Main Page</title>
 </head>
-<body>
+<body class="logout">
   <nav>
     <div class="nav-wrapper">
       <a href="/" class="brand-logo">"Pizzacato" Delivery</a>
       <ul id="nav-mobile" class="right hide-on-med-and-down">
         <li><a href="/">Home</a></li>
         <li><a href="/menu">Menu</a></li>
-        <li><a href="/account/create">Sign Up</a></li>
+        <li class="logout"><a href="/account/create">Sign Up</a></li>
+        <!--for logged in users only -->
+        <li class="login"><a href="/account/create">Cart</a></li>
+        <li class="login"><a href="/account/create">Orders</a></li>
+        <li class="login"><a href="/account/create">Account settigns</a></li>
+        <li class="login"><a href="/account/create">Logout</a></li>
       </ul>
     </div>
   </nav>

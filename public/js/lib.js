@@ -7,6 +7,17 @@ export const VALIDATORS = {
   'email': (value) => !(/\w+@\w+\.\w{2,}/).test(value),
 };
 
+export const setBodyLoginClass = (isLoggedIn) => {
+  const body = document.querySelector('body');
+  if (isLoggedIn) {
+    body.classList.remove('logout');
+    body.classList.add('login');
+    return;
+  };
+  body.classList.remove('login');
+  body.classList.add('logout');
+};
+
 export const showError = (formID, result) => {
   const errDiv = document.querySelector(`form#${formID}>div.row.error`);
   const cross = errDiv.querySelector('i.material-icons');

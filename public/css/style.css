@@ -1,3 +1,8 @@
+body.logout li.login,
+body.login li.logout {
+  display: none;
+}
+
 h1 {
   color: blueviolet;
 }
